@@ -1,24 +1,45 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.colors import ListedColormap
+import seaborn as sns; sns.set()
+from io import BytesIO
 
-# Візуалізація меж класифікації (для перших двох ознак)
-def plot_decision_boundary(X_set, y_set, model, title):
-    X1, X2 = X_set[:, 1], X_set[:, 2]  # Візуалізуємо за Age і Salary
-    X1_grid, X2_grid = np.meshgrid(
-        np.arange(start=X1.min()-1, stop=X1.max()+1, step=0.01),
-        np.arange(start=X2.min()-1, stop=X2.max()+1, step=0.01)
-    )
-    plt.contourf(
-        X1_grid, X2_grid,
-        model.predict(np.array([X_set[:, 0].mean(), X1_grid.ravel(), X2_grid.ravel()]).T.reshape(-1, 3)).reshape(X1_grid.shape),
-        alpha=0.75, cmap=ListedColormap(('red', 'green'))
-    )
-    plt.scatter(X1, X2, c=y_set, cmap=ListedColormap(('red', 'green')), edgecolor='k')
-    plt.title(title)
-    plt.xlabel('Age (scaled)')
-    plt.ylabel('Estimated Salary (scaled)')
-    plt.show()
+from sklearn.datasets import load_iris
+from sklearn.linear_model import RidgeClassifier
+from sklearn.model_selection import train_test_split
+from sklearn import metrics
+from sklearn.metrics import confusion_matrix
 
-plot_decision_boundary(X_train, y_train, log_clf, "Logistic Regression (Train)")
-plot_decision_boundary(X_test, y_test, log_clf, "Logistic Regression (Test)")
+# Завантаження набору даних Iris
+iris = load_iris()
+X, y = iris.data, iris.target
+
+# Поділ на тренувальні та тестові дані
+Xtrain, Xtest, ytrain, ytest = train_test_split(X, y, test_size=0.3, random_state=0)
+
+# Побудова класифікатора Ridge
+clf = RidgeClassifier(tol=1e-2, solver="sag")
+clf.fit(Xtrain, ytrain)
+
+# Передбачення результатів
+ypred = clf.predict(Xtest)
+
+# Оцінка якості моделі
+print('Accuracy:', np.round(metrics.accuracy_score(ytest, ypred), 4))
+print('Precision:', np.round(metrics.precision_score(ytest, ypred, average='weighted'), 4))
+print('Recall:', np.round(metrics.recall_score(ytest, ypred, average='weighted'), 4))
+print('F1 Score:', np.round(metrics.f1_score(ytest, ypred, average='weighted'), 4))
+print('Cohen Kappa Score:', np.round(metrics.cohen_kappa_score(ytest, ypred), 4))
+print('Matthews Corrcoef:', np.round(metrics.matthews_corrcoef(ytest, ypred), 4))
+print('\nClassification Report:\n', metrics.classification_report(ytest, ypred))
+
+# Побудова матриці плутанини
+mat = confusion_matrix(ytest, ypred)
+sns.heatmap(mat.T, square=True, annot=True, fmt='d', cbar=False)
+plt.xlabel('True label')
+plt.ylabel('Predicted label')
+plt.title('Confusion Matrix Ridge Classifier')
+plt.savefig("Confusion.jpg")
+
+# Збереження також у SVG (опційно)
+f = BytesIO()
+plt.savefig(f, format="svg")
