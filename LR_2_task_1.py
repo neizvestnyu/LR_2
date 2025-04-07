@@ -5,7 +5,7 @@ from sklearn.multiclass import OneVsOneClassifier
 from sklearn.model_selection import train_test_split, cross_val_score
 
 # Вхідний файл, який містить дані
-input_file = 'income_data.txt'
+input_file = 'adult.data'
 
 # Читання даних
 X = []
